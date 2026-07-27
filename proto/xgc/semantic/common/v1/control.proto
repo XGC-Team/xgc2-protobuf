@@ -14,3 +14,13 @@ message MotionVelocitySetpoint {
   Vector3 linear = 3;
   Vector3 angular = 4;
 }
+
+// RemoteControlIntentRequest is one complete, discrete operator intent shared
+// by aerial and ground robots. Adapters own the vehicle-specific mapping and
+// reject axes that their chassis cannot execute.
+message RemoteControlIntentRequest {
+  uint32 gear = 1;
+  int32 longitudinal = 2;
+  int32 lateral = 3;
+  int32 yaw = 4;
+}

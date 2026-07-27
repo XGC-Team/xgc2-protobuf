@@ -114,6 +114,11 @@ messages:
     version: 1
     roles: [request]
 
+  - id: 3205
+    type: xgc.semantic.common.v1.RemoteControlIntentRequest
+    version: 1
+    roles: [request]
+
   - id: 4001
     type: xgc.robot.v1.RobotAdapterSpec
     version: 2
