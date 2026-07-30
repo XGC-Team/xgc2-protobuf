@@ -19,8 +19,8 @@ int main() {
 
   const auto* spec_metadata = xgc::registry::v1::findMessage(4001);
   assert(spec_metadata != nullptr);
-  assert(spec_metadata->version == 2u);
-  assert(spec_metadata->fingerprint == 1932893837531035663ULL);
+  assert(spec_metadata->version == 3u);
+  assert(spec_metadata->fingerprint == 2292867660820935957ULL);
   assert(std::string(spec_metadata->full_name) == "xgc.robot.v1.RobotAdapterSpec");
   assert(dynamic_cast<xgc::robot::v1::RobotAdapterSpec*>(
              xgc::registry::v1::newMessage(4001).get()) != nullptr);
@@ -28,7 +28,7 @@ int main() {
   const auto* routed_metadata = xgc::registry::v1::findMessage(4002);
   assert(routed_metadata != nullptr);
   assert(routed_metadata->version == 1u);
-  assert(routed_metadata->fingerprint == 17079265246794908236ULL);
+  assert(routed_metadata->fingerprint == 17732826818852005547ULL);
   assert(std::string(routed_metadata->full_name) == "xgc.robot.v1.RobotMessage");
   assert(dynamic_cast<xgc::robot::v1::RobotMessage*>(
              xgc::registry::v1::newMessage(4002).get()) != nullptr);

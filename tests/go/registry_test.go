@@ -50,7 +50,7 @@ func TestAerialOperationRoundTripThroughMessage(t *testing.T) {
 
 func TestRobotAdapterSpecIsTypedDomainConfiguration(t *testing.T) {
 	spec := &robotv1.RobotAdapterSpec{
-		AssetDigest: "asset-digest",
+		RobotSelectionDigest: "robot-selection-digest",
 		Robots: []*robotv1.RobotResource{{
 			RobotId: "robot1", ProfileId: "fixture.robot-profile.v1", ProfileDigest: "profile-digest",
 			Parameters: map[string]string{"namespace": "/uav1"},
@@ -62,7 +62,7 @@ func TestRobotAdapterSpecIsTypedDomainConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	payload := &xgcv1.Payload{
-		Schema:   &xgcv1.SchemaReference{TypeName: "xgc.robot.v1.RobotAdapterSpec", SchemaVersion: 1},
+		Schema:   &xgcv1.SchemaReference{TypeName: "xgc.robot.v1.RobotAdapterSpec", SchemaVersion: 3},
 		Encoding: xgcv1.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
 		Value:    encoded,
 	}
@@ -74,7 +74,7 @@ func TestRobotAdapterSpecIsTypedDomainConfiguration(t *testing.T) {
 	if err := proto.Unmarshal(instanceSpec.GetConfiguration().GetValue(), &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.GetAssetDigest() != "asset-digest" || len(decoded.GetRobots()) != 1 ||
+	if decoded.GetRobotSelectionDigest() != "robot-selection-digest" || len(decoded.GetRobots()) != 1 ||
 		decoded.GetRobots()[0].GetChannels()[0].GetChannelId() != "state.pose" {
 		t.Fatalf("unexpected robot Adapter config: %v", &decoded)
 	}
@@ -107,11 +107,11 @@ func TestDomainBoundaryMessagesAreRegistered(t *testing.T) {
 			fullName: "xgc.v1.Empty", message: &xgcv1.Empty{},
 		},
 		{
-			id: 4001, version: 2, fingerprint: 1932893837531035663,
+			id: 4001, version: 3, fingerprint: 2292867660820935957,
 			fullName: "xgc.robot.v1.RobotAdapterSpec", message: &robotv1.RobotAdapterSpec{},
 		},
 		{
-			id: 4002, version: 1, fingerprint: 17079265246794908236,
+			id: 4002, version: 1, fingerprint: 17732826818852005547,
 			fullName: "xgc.robot.v1.RobotMessage", message: &robotv1.RobotMessage{},
 		},
 	}

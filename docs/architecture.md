@@ -166,10 +166,11 @@ grants, scope attributes, and pinned secret versions before connecting; native
 applications register handlers but do not synthesize identity proofs.
 
 `xgc.robot.v1.RobotAdapterSpec` is a typed domain configuration carried in
-`AdapterInstanceSpec.configuration`. It contains the immutable asset digest,
-robot resources, profile IDs/digests, parameters, and channel grants. The Host
-and Robot Adapter can therefore apply complete immutable domain configuration
-without an untyped JSON map, while the base Runtime Link remains domain-free.
+`AdapterInstanceSpec.configuration`. It contains the immutable Robot selection
+digest, Robot resources, profile IDs/digests, parameters, and channel grants.
+The Host and Robot Adapter can therefore apply complete immutable domain
+configuration without an untyped JSON map, while the base Runtime Link remains
+domain-free.
 
 Large files and artifacts remain outside this protocol. A capability may define
 a bounded stream of typed messages, but the Runtime Link is not a generic file

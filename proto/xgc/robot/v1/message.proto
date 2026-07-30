@@ -32,6 +32,6 @@ message RobotResource {
 // AdapterInstanceSpec.configuration. The generic Runtime Link does not inspect
 // or duplicate any of these fields.
 message RobotAdapterSpec {
-  string asset_digest = 1;
+  string robot_selection_digest = 1;
   repeated RobotResource robots = 2;
 }

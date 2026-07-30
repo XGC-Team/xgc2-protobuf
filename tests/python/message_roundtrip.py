@@ -12,14 +12,14 @@ def assert_domain_boundary_registry():
         1: ("xgc.v1.Empty", 1, 11009224659857530918, message_pb2.Empty),
         4001: (
             "xgc.robot.v1.RobotAdapterSpec",
-            2,
-            1932893837531035663,
+            3,
+            2292867660820935957,
             robot_message_pb2.RobotAdapterSpec,
         ),
         4002: (
             "xgc.robot.v1.RobotMessage",
             1,
-            17079265246794908236,
+            17732826818852005547,
             robot_message_pb2.RobotMessage,
         ),
     }

@@ -75,11 +75,11 @@ bytes are a protocol violation.
 
 `xgc.v1.Message` is domain-neutral. Robot and channel routing now lives only in
 `xgc.robot.v1.RobotMessage`. `xgc.robot.v1.RobotAdapterSpec` is the typed robot
-configuration payload for a generic `AdapterInstanceSpec`; it owns asset digest,
-robot resources, profile identity, parameters, and channel grants without
-leaking those fields into the Runtime Link. Semantic payload definitions and
-their historical message IDs remain reusable and are not coupled to Adapter
-instance scope.
+configuration payload for a generic `AdapterInstanceSpec`; it owns the immutable
+Robot selection digest, Robot resources, profile identity, parameters, and
+channel grants without leaking those fields into the Runtime Link. Semantic
+payload definitions and their historical message IDs remain reusable and are
+not coupled to Adapter instance scope.
 
 See [docs/architecture.md](docs/architecture.md) for protocol invariants.
 
