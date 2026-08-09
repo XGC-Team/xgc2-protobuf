@@ -4,6 +4,7 @@ from xgc.registry.v1 import message_registry
 from xgc.robot.v1 import message_pb2 as robot_message_pb2
 from xgc.semantic.aerial.v1 import control_pb2
 from xgc.semantic.ground.v1 import control_pb2 as ground_control_pb2
+from xgc.semantic.ground.v1 import locomotion_pb2
 from xgc.v1 import message_pb2
 
 
@@ -21,6 +22,18 @@ def assert_domain_boundary_registry():
             1,
             17732826818852005547,
             robot_message_pb2.RobotMessage,
+        ),
+        3103: (
+            "xgc.semantic.ground.v1.LocomotionStatus",
+            1,
+            17502343282573601552,
+            locomotion_pb2.LocomotionStatus,
+        ),
+        3104: (
+            "xgc.semantic.ground.v1.JointStateSet",
+            1,
+            12421060107119594740,
+            locomotion_pb2.JointStateSet,
         ),
     }
     for message_id, (full_name, version, fingerprint, message_type) in expected.items():
@@ -56,6 +69,14 @@ def main():
     decoded.ParseFromString(envelope.payload.value)
     assert decoded.mode == "OFFBOARD"
     assert isinstance(message_registry.new_message(3201), control_pb2.ArmRequest)
+    assert (
+        message_registry.new_message(3103).DESCRIPTOR.full_name
+        == "xgc.semantic.ground.v1.LocomotionStatus"
+    )
+    assert (
+        message_registry.new_message(3104).DESCRIPTOR.full_name
+        == "xgc.semantic.ground.v1.JointStateSet"
+    )
     assert isinstance(
         message_registry.new_message(3203), control_pb2.AutopilotRebootRequest
     )

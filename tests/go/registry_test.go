@@ -114,6 +114,14 @@ func TestDomainBoundaryMessagesAreRegistered(t *testing.T) {
 			id: 4002, version: 1, fingerprint: 17732826818852005547,
 			fullName: "xgc.robot.v1.RobotMessage", message: &robotv1.RobotMessage{},
 		},
+		{
+			id: 3103, version: 1, fingerprint: 17502343282573601552,
+			fullName: "xgc.semantic.ground.v1.LocomotionStatus", message: &groundv1.LocomotionStatus{},
+		},
+		{
+			id: 3104, version: 1, fingerprint: 12421060107119594740,
+			fullName: "xgc.semantic.ground.v1.JointStateSet", message: &groundv1.JointStateSet{},
+		},
 	}
 	for _, test := range tests {
 		metadata, ok := Lookup(test.id)

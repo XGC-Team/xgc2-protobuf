@@ -7,6 +7,7 @@
 #include "xgc/robot/v1/message.pb.h"
 #include "xgc/semantic/aerial/v1/control.pb.h"
 #include "xgc/semantic/ground/v1/control.pb.h"
+#include "xgc/semantic/ground/v1/locomotion.pb.h"
 #include "xgc/v1/message.pb.h"
 
 int main() {
@@ -16,6 +17,16 @@ int main() {
   assert(empty_metadata->fingerprint == 11009224659857530918ULL);
   assert(std::string(empty_metadata->full_name) == "xgc.v1.Empty");
   assert(dynamic_cast<xgc::v1::Empty*>(xgc::registry::v1::newMessage(1).get()) != nullptr);
+  assert(dynamic_cast<xgc::semantic::ground::v1::LocomotionStatus*>(
+             xgc::registry::v1::newMessage(3103).get()) != nullptr);
+  assert(dynamic_cast<xgc::semantic::ground::v1::JointStateSet*>(
+             xgc::registry::v1::newMessage(3104).get()) != nullptr);
+  const auto* locomotion_metadata = xgc::registry::v1::findMessage(3103);
+  assert(locomotion_metadata != nullptr);
+  assert(locomotion_metadata->fingerprint == 17502343282573601552ULL);
+  const auto* joints_metadata = xgc::registry::v1::findMessage(3104);
+  assert(joints_metadata != nullptr);
+  assert(joints_metadata->fingerprint == 12421060107119594740ULL);
 
   const auto* spec_metadata = xgc::registry::v1::findMessage(4001);
   assert(spec_metadata != nullptr);

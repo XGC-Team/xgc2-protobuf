@@ -94,6 +94,16 @@ messages:
     version: 1
     roles: [telemetry]
 
+  - id: 3103
+    type: xgc.semantic.ground.v1.LocomotionStatus
+    version: 1
+    roles: [telemetry]
+
+  - id: 3104
+    type: xgc.semantic.ground.v1.JointStateSet
+    version: 1
+    roles: [telemetry]
+
   - id: 3201
     type: xgc.semantic.aerial.v1.ArmRequest
     version: 1

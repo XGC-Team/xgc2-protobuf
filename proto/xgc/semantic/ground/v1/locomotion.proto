@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package xgc.semantic.ground.v1;
+
+option go_package = "xgc2/protocols/xgc/semantic/ground/v1;groundv1";
+
+// LocomotionStatus is read-only state reported by a ground robot driver. It
+// does not grant or imply a command channel.
+message LocomotionStatus {
+  string mode = 1;
+  bool motion_enabled = 2;
+  bool command_stale = 3;
+}
+
+message JointStateSample {
+  string name = 1;
+  double position = 2;
+  double velocity = 3;
+  double effort = 4;
+}
+
+// JointStateSet is a bounded semantic projection of one coherent joint sample.
+message JointStateSet {
+  string frame_id = 1;
+  repeated JointStateSample joints = 2;
+}
