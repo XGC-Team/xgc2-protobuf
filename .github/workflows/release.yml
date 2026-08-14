@@ -196,11 +196,11 @@ jobs:
       matrix:
         include:
           - distribution: focal
-            image: ubuntu:20.04
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0
           - distribution: jammy
-            image: ubuntu:22.04
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-jammy-dev:1.0.0
           - distribution: noble
-            image: ubuntu:24.04
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-noble-dev:1.0.0
     defaults:
       run:
         shell: bash

@@ -25,61 +25,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 1.24.x
-          cache-dependency-path: packaging/go/go.sum
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - name: Install C++ and protobuf tools
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            libgrpc++-dev \
-            libprotobuf-dev \
-            libre2-dev \
-            pkg-config \
-            protobuf-compiler \
-            protobuf-compiler-grpc \
-            python3-venv
-
-      - name: Install pinned generators
-        run: |
-          set -euo pipefail
-          python -m pip install -r requirements/generator.txt
-          tools/install-go-plugins.sh
-
-      - name: Set up Buf
-        uses: bufbuild/buf-setup-action@v1
-        with:
-          version: 1.47.2
-
-      - name: Lint protobuf contracts
-        run: buf lint
-
-      - name: Check protobuf compatibility within the protocol epoch
-        if: ${{ github.event_name == 'pull_request' }}
-        env:
-          BASE_REF: origin/${{ github.base_ref }}
-        run: tools/check-breaking.sh "${BASE_REF}"
-
-      - name: Generate and test C++, Go, and Python
+      - name: Lint, generate, and test in the XGC2 jammy image
         env:
           XGC2_GO_PROXY: https://proxy.golang.org,direct
         run: |
           set -euo pipefail
-          tools/smoke-test.sh
-
-      - name: Check source cleanliness
-        run: |
-          set -euo pipefail
+          image=ghcr.io/xgc-team/xgc2-images/xgc2-build-jammy-dev:1.0.0
+          docker pull "${image}"
+          docker run --rm \
+            -e XGC2_GO_PROXY \
+            -e GITHUB_BASE_REF \
+            -v "${GITHUB_WORKSPACE}:/work" -w /work \
+            "${image}" \
+            bash -lc '
+              set -euo pipefail
+              git config --global --add safe.directory /work
+              tools/install-go-plugins.sh
+              buf lint
+              if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+                tools/check-breaking.sh "origin/${GITHUB_BASE_REF}"
+              fi
+              tools/smoke-test.sh
+            '
           git diff --check HEAD
           test -z "$(git status --short --untracked-files=no)"
 
@@ -93,17 +60,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install compliance dependencies
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends python3-yaml
-
       - name: Check whitespace and package contract
         run: |
           set -euo pipefail
           git diff --check HEAD
-          ./.xgc2/scripts/check_package_compliance.sh
+          docker pull ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0
+          docker run --rm --network none \
+            -v "${GITHUB_WORKSPACE}:/work" -w /work \
+            ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0 \
+            bash -lc './.xgc2/scripts/check_package_compliance.sh'
 
   deb-build-and-smoke:
     name: Debian ${{ matrix.distribution }} (Architecture all)
@@ -113,11 +78,11 @@ jobs:
       matrix:
         include:
           - distribution: focal
-            image: ubuntu:20.04
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0
           - distribution: jammy
-            image: ubuntu:22.04
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-jammy-dev:1.0.0
           - distribution: noble
-            image: ubuntu:24.04
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-noble-dev:1.0.0
     defaults:
       run:
         shell: bash
@@ -129,31 +94,22 @@ jobs:
         run: |
           set -euo pipefail
           install -d .ci/build-manifests
-          docker run --rm \
+          docker run --rm --network none \
             -v "${GITHUB_WORKSPACE}:/work" \
             -w /work \
             -e PACKAGE_DISTRIBUTION="${{ matrix.distribution }}" \
             "${{ matrix.image }}" \
             bash -lc '
               set -euo pipefail
-              export DEBIAN_FRONTEND=noninteractive
-              apt-get update
-              apt-get install -y --no-install-recommends \
-                ca-certificates \
-                cmake \
-                dpkg-dev \
-                fakeroot \
-                git \
-                make \
-                pkg-config \
-                protobuf-compiler \
-                python3 \
-                python3-protobuf \
-                python3-yaml
+              for pkg in ca-certificates cmake dpkg-dev fakeroot git make \
+                pkg-config protobuf-compiler python3 python3-protobuf python3-yaml
+              do
+                dpkg -s "${pkg}" >/dev/null
+              done
               git config --global --add safe.directory /work
               ./.xgc2/scripts/check_package_compliance.sh
               ./.xgc2/scripts/build_deb.sh
-              apt-get install -y ./debs/xgc2-protobuf-dev_*.deb
+              dpkg -i ./debs/xgc2-protobuf-dev_*.deb
               ./.xgc2/scripts/smoke_test_installed.sh
             '
 
