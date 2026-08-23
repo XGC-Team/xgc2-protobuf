@@ -4,6 +4,12 @@ modules:
 lint:
   use:
     - STANDARD
+  # These JSON enum names are already the cross-language telemetry contract.
+  # Scope the nested-enum prefix exception to this one schema instead of
+  # weakening the repository-wide STANDARD lint policy.
+  ignore_only:
+    ENUM_VALUE_PREFIX:
+      - proto/xgc/semantic/common/v1/telemetry.proto
 breaking:
   use:
     - FILE

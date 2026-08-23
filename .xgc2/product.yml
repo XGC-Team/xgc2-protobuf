@@ -37,7 +37,7 @@ ownership:
   - /usr/share/cmake/xgc2_protobuf
   - /usr/share/pkgconfig/xgc2-protobuf.pc
 release:
-  repository: lxk36/xgc2-protobuf
+  repository: XGC-Team/xgc2-protobuf
   ref: master
   workflow: release.yml
   ci_workflow: ci.yml
