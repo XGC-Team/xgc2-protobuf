@@ -45,17 +45,51 @@ message ImuEstimate {
 }
 
 message PowerStatus {
+  enum PercentageState {
+    PERCENTAGE_STATE_UNSPECIFIED = 0;
+    PERCENTAGE_STATE_AVAILABLE = 1;
+    PERCENTAGE_STATE_UNAVAILABLE = 2;
+  }
+
   double percentage = 1;
   double voltage_v = 2;
   double current_a = 3;
   double temperature_c = 4;
   bool charging = 5;
+  PercentageState percentage_state = 6;
+}
+
+message PositioningHealth {
+  enum State {
+    POSITIONING_STATE_UNSPECIFIED = 0;
+    POSITIONING_STATE_WARMING_UP = 1;
+    POSITIONING_STATE_STABLE = 2;
+    POSITIONING_STATE_JITTERING = 3;
+    POSITIONING_STATE_MOVING = 4;
+    POSITIONING_STATE_TIMED_OUT = 5;
+  }
+
+  enum Reason {
+    POSITIONING_REASON_UNSPECIFIED = 0;
+    POSITIONING_REASON_INSUFFICIENT_SAMPLES = 1;
+    POSITIONING_REASON_STATIONARY_WINDOW_STABLE = 2;
+    POSITIONING_REASON_STATIONARY_JITTER_EXCEEDED = 3;
+    POSITIONING_REASON_ROBOT_MOVING = 4;
+    POSITIONING_REASON_VRPN_TIMEOUT = 5;
+  }
+
+  State state = 1;
+  Reason reason = 2;
+  uint64 observed_age_ms = 3;
+  double window_spread_m = 4;
+  uint32 sample_count = 5;
 }
 
 message VehicleHealth {
   bool online = 1;
   string summary = 2;
   repeated Fault faults = 3;
+  PositioningHealth positioning = 4;
 }
 
 message ChannelHealth {

@@ -36,12 +36,12 @@ messages:
 
   - id: 2004
     type: xgc.semantic.common.v1.PowerStatus
-    version: 1
+    version: 2
     roles: [telemetry]
 
   - id: 2005
     type: xgc.semantic.common.v1.VehicleHealth
-    version: 1
+    version: 2
     roles: [telemetry]
 
   - id: 2006
