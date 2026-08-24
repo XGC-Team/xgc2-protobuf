@@ -6,6 +6,7 @@
 #include "xgc/registry/v1/message_registry.hpp"
 #include "xgc/robot/v1/message.pb.h"
 #include "xgc/semantic/aerial/v1/control.pb.h"
+#include "xgc/semantic/common/v1/acceleration.pb.h"
 #include "xgc/semantic/ground/v1/control.pb.h"
 #include "xgc/semantic/ground/v1/locomotion.pb.h"
 #include "xgc/v1/message.pb.h"
@@ -21,6 +22,8 @@ int main() {
              xgc::registry::v1::newMessage(3103).get()) != nullptr);
   assert(dynamic_cast<xgc::semantic::ground::v1::JointStateSet*>(
              xgc::registry::v1::newMessage(3104).get()) != nullptr);
+  assert(dynamic_cast<xgc::semantic::common::v1::AccelerationEstimate*>(
+             xgc::registry::v1::newMessage(2008).get()) != nullptr);
   const auto* locomotion_metadata = xgc::registry::v1::findMessage(3103);
   assert(locomotion_metadata != nullptr);
   assert(locomotion_metadata->fingerprint == 17502343282573601552ULL);

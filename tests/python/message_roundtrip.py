@@ -3,6 +3,7 @@
 from xgc.registry.v1 import message_registry
 from xgc.robot.v1 import message_pb2 as robot_message_pb2
 from xgc.semantic.aerial.v1 import control_pb2
+from xgc.semantic.common.v1 import acceleration_pb2
 from xgc.semantic.ground.v1 import control_pb2 as ground_control_pb2
 from xgc.semantic.ground.v1 import locomotion_pb2
 from xgc.v1 import message_pb2
@@ -34,6 +35,12 @@ def assert_domain_boundary_registry():
             1,
             12421060107119594740,
             locomotion_pb2.JointStateSet,
+        ),
+        2008: (
+            "xgc.semantic.common.v1.AccelerationEstimate",
+            1,
+            4994560962731678057,
+            acceleration_pb2.AccelerationEstimate,
         ),
     }
     for message_id, (full_name, version, fingerprint, message_type) in expected.items():

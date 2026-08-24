@@ -7,6 +7,7 @@ import (
 	adapterv1 "xgc2/protocols/xgc/adapter/v1"
 	robotv1 "xgc2/protocols/xgc/robot/v1"
 	aerialv1 "xgc2/protocols/xgc/semantic/aerial/v1"
+	commonv1 "xgc2/protocols/xgc/semantic/common/v1"
 	groundv1 "xgc2/protocols/xgc/semantic/ground/v1"
 	xgcv1 "xgc2/protocols/xgc/v1"
 )
@@ -121,6 +122,10 @@ func TestDomainBoundaryMessagesAreRegistered(t *testing.T) {
 		{
 			id: 3104, version: 1, fingerprint: 12421060107119594740,
 			fullName: "xgc.semantic.ground.v1.JointStateSet", message: &groundv1.JointStateSet{},
+		},
+		{
+			id: 2008, version: 1, fingerprint: 4994560962731678057,
+			fullName: "xgc.semantic.common.v1.AccelerationEstimate", message: &commonv1.AccelerationEstimate{},
 		},
 	}
 	for _, test := range tests {

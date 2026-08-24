@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package xgc.semantic.common.v1;
+
+option go_package = "xgc2/protocols/xgc/semantic/common/v1;commonv1";
+
+import "xgc/semantic/common/v1/types.proto";
+
+// Linear and angular acceleration expressed in frame_id. This is a direct
+// acceleration observation or estimate; it is neither a velocity payload nor
+// an IMU sample with orientation and angular-velocity semantics. A separate
+// schema file keeps existing common-v1 message fingerprints immutable.
+message AccelerationEstimate {
+  string frame_id = 1;
+  Vector3 linear = 2;
+  Vector3 angular = 3;
+  repeated double covariance = 4;
+}

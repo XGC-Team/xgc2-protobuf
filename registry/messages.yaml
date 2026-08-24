@@ -54,6 +54,11 @@ messages:
     version: 1
     roles: [telemetry]
 
+  - id: 2008
+    type: xgc.semantic.common.v1.AccelerationEstimate
+    version: 1
+    roles: [telemetry]
+
   - id: 2010
     type: xgc.semantic.common.v1.ChannelHealth
     version: 1
