@@ -67,6 +67,13 @@ message PositioningHealth {
     POSITIONING_STATE_JITTERING = 3;
     POSITIONING_STATE_MOVING = 4;
     POSITIONING_STATE_TIMED_OUT = 5;
+    // The source is fresh and the configured repeat-frame window contains
+    // enough natural variation to prove that it is not replaying a frozen
+    // pose. This is intentionally distinct from robot motion.
+    POSITIONING_STATE_ACTIVE = 6;
+    // Messages are still arriving, but the configured repeat-frame detector
+    // found no qualifying variation on the admitted axes.
+    POSITIONING_STATE_FROZEN = 7;
   }
 
   enum Reason {
@@ -76,6 +83,8 @@ message PositioningHealth {
     POSITIONING_REASON_STATIONARY_JITTER_EXCEEDED = 3;
     POSITIONING_REASON_ROBOT_MOVING = 4;
     POSITIONING_REASON_VRPN_TIMEOUT = 5;
+    POSITIONING_REASON_WINDOW_VARIATION_OBSERVED = 6;
+    POSITIONING_REASON_REPEAT_FRAME_WINDOW_FROZEN = 7;
   }
 
   State state = 1;
