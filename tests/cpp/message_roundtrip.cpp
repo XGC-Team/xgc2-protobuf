@@ -83,6 +83,8 @@ int main() {
              xgc::registry::v1::newMessage(3201).get()) != nullptr);
   assert(dynamic_cast<xgc::semantic::aerial::v1::AutopilotRebootRequest*>(
              xgc::registry::v1::newMessage(3203).get()) != nullptr);
+  assert(dynamic_cast<xgc::semantic::aerial::v1::ForceDisarmRequest*>(
+             xgc::registry::v1::newMessage(3206).get()) != nullptr);
   const auto* ground_intent_metadata = xgc::registry::v1::findMessage(3204);
   assert(ground_intent_metadata != nullptr);
   assert(ground_intent_metadata->fingerprint == 13602409479439522314ULL);

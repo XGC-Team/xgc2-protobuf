@@ -87,6 +87,9 @@ def main():
     assert isinstance(
         message_registry.new_message(3203), control_pb2.AutopilotRebootRequest
     )
+    assert isinstance(
+        message_registry.new_message(3206), control_pb2.ForceDisarmRequest
+    )
     ground_intent = message_registry.new_message(3204)
     assert isinstance(ground_intent, ground_control_pb2.MotionIntentRequest)
     assert message_registry.METADATA[3204]["fingerprint"] == 13602409479439522314
