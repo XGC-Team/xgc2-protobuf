@@ -134,6 +134,11 @@ messages:
     version: 1
     roles: [request]
 
+  - id: 3206
+    type: xgc.semantic.aerial.v1.ForceDisarmRequest
+    version: 1
+    roles: [request]
+
   - id: 4001
     type: xgc.robot.v1.RobotAdapterSpec
     version: 3

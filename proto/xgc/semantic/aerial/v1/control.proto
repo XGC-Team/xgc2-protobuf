@@ -17,3 +17,6 @@ message ModeRequest {
 
 // AutopilotRebootRequest requests a normal flight-controller restart.
 message AutopilotRebootRequest {}
+
+// ForceDisarmRequest requests PX4 kill / force-disarm (MAV_CMD 400, param2=21196).
+message ForceDisarmRequest {}
