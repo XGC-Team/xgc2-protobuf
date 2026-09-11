@@ -116,3 +116,10 @@ message ChannelHealth {
 message StreamHealthReport {
   repeated ChannelHealth channels = 1;
 }
+
+// Product controller CONTROL leaf name, copied from ROS std_msgs/String
+// {ns}/custom/statustext. Frontends display text as-is; they must not map
+// numeric state ids.
+message ControllerStatus {
+  string text = 1;
+}

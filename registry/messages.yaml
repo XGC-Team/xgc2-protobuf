@@ -69,6 +69,11 @@ messages:
     version: 1
     roles: [diagnostic]
 
+  - id: 2012
+    type: xgc.semantic.common.v1.ControllerStatus
+    version: 1
+    roles: [telemetry]
+
   - id: 3001
     type: xgc.semantic.aerial.v1.FlightStatus
     version: 1
