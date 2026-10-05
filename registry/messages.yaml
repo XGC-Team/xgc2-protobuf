@@ -146,10 +146,15 @@ messages:
 
   - id: 4001
     type: xgc.robot.v1.RobotAdapterSpec
-    version: 3
+    version: 4
     roles: [configuration]
 
   - id: 4002
     type: xgc.robot.v1.RobotMessage
     version: 1
     roles: [telemetry]
+
+  - id: 4003
+    type: xgc.world.v1.WorldRuntimeSpec
+    version: 1
+    roles: [configuration]

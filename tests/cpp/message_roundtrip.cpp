@@ -10,6 +10,7 @@
 #include "xgc/semantic/ground/v1/control.pb.h"
 #include "xgc/semantic/ground/v1/locomotion.pb.h"
 #include "xgc/v1/message.pb.h"
+#include "xgc/world/v1/message.pb.h"
 
 int main() {
   const auto* empty_metadata = xgc::registry::v1::findMessage(1);
@@ -33,8 +34,8 @@ int main() {
 
   const auto* spec_metadata = xgc::registry::v1::findMessage(4001);
   assert(spec_metadata != nullptr);
-  assert(spec_metadata->version == 3u);
-  assert(spec_metadata->fingerprint == 2292867660820935957ULL);
+  assert(spec_metadata->version == 4u);
+  assert(spec_metadata->fingerprint == 5254957371271658330ULL);
   assert(std::string(spec_metadata->full_name) == "xgc.robot.v1.RobotAdapterSpec");
   assert(dynamic_cast<xgc::robot::v1::RobotAdapterSpec*>(
              xgc::registry::v1::newMessage(4001).get()) != nullptr);
@@ -42,10 +43,27 @@ int main() {
   const auto* routed_metadata = xgc::registry::v1::findMessage(4002);
   assert(routed_metadata != nullptr);
   assert(routed_metadata->version == 1u);
-  assert(routed_metadata->fingerprint == 17732826818852005547ULL);
+  assert(routed_metadata->fingerprint == 2768611942346717735ULL);
   assert(std::string(routed_metadata->full_name) == "xgc.robot.v1.RobotMessage");
   assert(dynamic_cast<xgc::robot::v1::RobotMessage*>(
              xgc::registry::v1::newMessage(4002).get()) != nullptr);
+
+  const auto* world_metadata = xgc::registry::v1::findMessage(4003);
+  assert(world_metadata != nullptr);
+  assert(world_metadata->version == 1u);
+  assert(world_metadata->fingerprint == 8026494345279606082ULL);
+  assert(std::string(world_metadata->full_name) == "xgc.world.v1.WorldRuntimeSpec");
+  assert(dynamic_cast<xgc::world::v1::WorldRuntimeSpec*>(
+             xgc::registry::v1::newMessage(4003).get()) != nullptr);
+  xgc::world::v1::WorldRuntimeSpec world;
+  world.set_world_deployment_digest("sha256:" + std::string(64u, 'a'));
+  assert(world.SerializeAsString().size() == 73u);
+  xgc::robot::v1::RobotAdapterSpec robot_spec;
+  robot_spec.mutable_robot()->set_robot_id("uav1");
+  assert(robot_spec.robot().robot_id() == "uav1");
+  assert(robot_spec.GetDescriptor()->IsReservedNumber(2));
+  assert(robot_spec.GetDescriptor()->IsReservedName("robots"));
+  assert(robot_spec.GetDescriptor()->FindFieldByName("robot")->number() == 3);
 
   xgc::semantic::aerial::v1::ModeRequest request;
   request.set_mode("OFFBOARD");

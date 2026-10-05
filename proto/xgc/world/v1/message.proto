@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package xgc.world.v1;
+
+option go_package = "xgc2/protocols/xgc/world/v1;worldv1";
+
+// A reference to the one server-frozen World deployment and I/O authorization.
+// Entities/profile metadata remain owned by that freeze, not this SDK payload.
+message WorldRuntimeSpec {
+  string world_deployment_digest = 1;
+}

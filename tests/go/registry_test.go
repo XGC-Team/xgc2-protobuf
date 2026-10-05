@@ -10,6 +10,7 @@ import (
 	commonv1 "xgc2/protocols/xgc/semantic/common/v1"
 	groundv1 "xgc2/protocols/xgc/semantic/ground/v1"
 	xgcv1 "xgc2/protocols/xgc/v1"
+	worldv1 "xgc2/protocols/xgc/world/v1"
 )
 
 func TestAerialOperationRoundTripThroughMessage(t *testing.T) {
@@ -52,18 +53,25 @@ func TestAerialOperationRoundTripThroughMessage(t *testing.T) {
 func TestRobotAdapterSpecIsTypedDomainConfiguration(t *testing.T) {
 	spec := &robotv1.RobotAdapterSpec{
 		RobotSelectionDigest: "robot-selection-digest",
-		Robots: []*robotv1.RobotResource{{
+		Robot: &robotv1.RobotResource{
 			RobotId: "robot1", ProfileId: "fixture.robot-profile.v1", ProfileDigest: "profile-digest",
 			Parameters: map[string]string{"namespace": "/uav1"},
 			Channels:   []*robotv1.ChannelGrant{{ChannelId: "state.pose", Enabled: true}},
-		}},
+		},
 	}
 	encoded, err := proto.Marshal(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
+	metadata, ok := Lookup(4001)
+	if !ok {
+		t.Fatal("robot configuration is not registered")
+	}
 	payload := &xgcv1.Payload{
-		Schema:   &xgcv1.SchemaReference{TypeName: "xgc.robot.v1.RobotAdapterSpec", SchemaVersion: 3},
+		Schema: &xgcv1.SchemaReference{
+			MessageId: metadata.ID, TypeName: metadata.FullName,
+			SchemaVersion: metadata.Version, SchemaFingerprint: metadata.Fingerprint,
+		},
 		Encoding: xgcv1.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
 		Value:    encoded,
 	}
@@ -75,9 +83,14 @@ func TestRobotAdapterSpecIsTypedDomainConfiguration(t *testing.T) {
 	if err := proto.Unmarshal(instanceSpec.GetConfiguration().GetValue(), &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.GetRobotSelectionDigest() != "robot-selection-digest" || len(decoded.GetRobots()) != 1 ||
-		decoded.GetRobots()[0].GetChannels()[0].GetChannelId() != "state.pose" {
+	if decoded.GetRobotSelectionDigest() != "robot-selection-digest" || decoded.GetRobot() == nil ||
+		decoded.GetRobot().GetChannels()[0].GetChannelId() != "state.pose" {
 		t.Fatalf("unexpected robot Adapter config: %v", &decoded)
+	}
+	descriptor := decoded.ProtoReflect().Descriptor()
+	if descriptor.Fields().ByNumber(2) != nil || !descriptor.ReservedRanges().Has(2) ||
+		!descriptor.ReservedNames().Has("robots") || descriptor.Fields().ByName("robot").Number() != 3 {
+		t.Fatal("single robot must use tag 3 and retire the robots field/tag 2")
 	}
 }
 
@@ -108,12 +121,16 @@ func TestDomainBoundaryMessagesAreRegistered(t *testing.T) {
 			fullName: "xgc.v1.Empty", message: &xgcv1.Empty{},
 		},
 		{
-			id: 4001, version: 3, fingerprint: 2292867660820935957,
+			id: 4001, version: 4, fingerprint: 5254957371271658330,
 			fullName: "xgc.robot.v1.RobotAdapterSpec", message: &robotv1.RobotAdapterSpec{},
 		},
 		{
-			id: 4002, version: 1, fingerprint: 17732826818852005547,
+			id: 4002, version: 1, fingerprint: 2768611942346717735,
 			fullName: "xgc.robot.v1.RobotMessage", message: &robotv1.RobotMessage{},
+		},
+		{
+			id: 4003, version: 1, fingerprint: 8026494345279606082,
+			fullName: "xgc.world.v1.WorldRuntimeSpec", message: &worldv1.WorldRuntimeSpec{},
 		},
 		{
 			id: 3103, version: 1, fingerprint: 17502343282573601552,

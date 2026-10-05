@@ -7,6 +7,7 @@ from xgc.semantic.common.v1 import acceleration_pb2
 from xgc.semantic.ground.v1 import control_pb2 as ground_control_pb2
 from xgc.semantic.ground.v1 import locomotion_pb2
 from xgc.v1 import message_pb2
+from xgc.world.v1 import message_pb2 as world_message_pb2
 
 
 def assert_domain_boundary_registry():
@@ -14,15 +15,21 @@ def assert_domain_boundary_registry():
         1: ("xgc.v1.Empty", 1, 11009224659857530918, message_pb2.Empty),
         4001: (
             "xgc.robot.v1.RobotAdapterSpec",
-            3,
-            2292867660820935957,
+            4,
+            5254957371271658330,
             robot_message_pb2.RobotAdapterSpec,
         ),
         4002: (
             "xgc.robot.v1.RobotMessage",
             1,
-            17732826818852005547,
+            2768611942346717735,
             robot_message_pb2.RobotMessage,
+        ),
+        4003: (
+            "xgc.world.v1.WorldRuntimeSpec",
+            1,
+            8026494345279606082,
+            world_message_pb2.WorldRuntimeSpec,
         ),
         3103: (
             "xgc.semantic.ground.v1.LocomotionStatus",
@@ -54,6 +61,16 @@ def assert_domain_boundary_registry():
 
 def main():
     assert_domain_boundary_registry()
+    robot = robot_message_pb2.RobotAdapterSpec(
+        robot=robot_message_pb2.RobotResource(robot_id="uav1")
+    )
+    assert robot.robot.robot_id == "uav1"
+    assert robot.DESCRIPTOR.fields_by_name["robot"].number == 3
+    assert 2 not in robot.DESCRIPTOR.fields_by_number
+    world = world_message_pb2.WorldRuntimeSpec(
+        world_deployment_digest="sha256:" + "a" * 64
+    )
+    assert len(world.SerializeToString()) == 73
     payload = control_pb2.ModeRequest(mode="OFFBOARD").SerializeToString()
     metadata = message_registry.METADATA[3202]
     envelope = message_pb2.Message(
