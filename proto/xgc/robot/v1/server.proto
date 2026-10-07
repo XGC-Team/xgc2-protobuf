@@ -8,13 +8,13 @@ import "xgc/adapter/v1/adapter.proto";
 
 // Hosted by one local process per robot type and actual ROS environment.
 // Runs own member uses, never processes. No command is replayed on reconnect.
-service RobotAdapterServer {
-  rpc ApplyMembers(ApplyMembersRequest) returns (MembersResult);
-  rpc RemoveMembers(RemoveMembersRequest) returns (MembersResult);
-  rpc Execute(ExecuteRequest) returns (xgc.adapter.v1.OperationEvent);
-  rpc SubscribeStatus(StatusRequest) returns (stream StatusBatch);
+service RobotAdapterServerService {
+  rpc ApplyMembers(ApplyMembersRequest) returns (ApplyMembersResponse);
+  rpc RemoveMembers(RemoveMembersRequest) returns (RemoveMembersResponse);
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+  rpc SubscribeStatus(SubscribeStatusRequest) returns (stream SubscribeStatusResponse);
   rpc Health(HealthRequest) returns (HealthResponse);
-  rpc Shutdown(HealthRequest) returns (HealthResponse);
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
 }
 
 // Written mode 0600 by the existing Process Supervisor owner.
@@ -42,14 +42,16 @@ message MemberResult {
   MemberIdentity identity = 1;
   xgc.adapter.v1.AdapterError error = 2;
 }
-message MembersResult { repeated MemberResult members = 1; }
+message ApplyMembersResponse { repeated MemberResult members = 1; }
+message RemoveMembersResponse { repeated MemberResult members = 1; }
 
 message ExecuteRequest {
   MemberIdentity identity = 1;
   xgc.adapter.v1.OperationRequest operation = 2;
 }
+message ExecuteResponse { xgc.adapter.v1.OperationEvent event = 1; }
 
-message StatusRequest {}
+message SubscribeStatusRequest {}
 message MemberStatus {
   MemberIdentity identity = 1;
   repeated RobotMessage messages = 2;
@@ -57,6 +59,8 @@ message MemberStatus {
 }
 // Snapshots and changes contain latest channel values. A slow subscriber does
 // not retain history or apply backpressure to native ROS publishers.
-message StatusBatch { repeated MemberStatus members = 1; }
+message SubscribeStatusResponse { repeated MemberStatus members = 1; }
 message HealthRequest {}
 message HealthResponse { bool serving = 1; }
+message ShutdownRequest {}
+message ShutdownResponse { bool serving = 1; }
