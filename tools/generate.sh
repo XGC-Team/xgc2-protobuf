@@ -9,6 +9,7 @@ go_out="${generated_dir}/go"
 python_out="${generated_dir}/python"
 descriptor_out="${generated_dir}/descriptors/xgc2-protocols.pb"
 adapter_proto="xgc/adapter/v1/adapter.proto"
+robot_server_proto="xgc/robot/v1/server.proto"
 
 export PATH="${root_dir}/.tools/bin:${PATH}"
 
@@ -42,7 +43,7 @@ mkdir -p "${cpp_out}" "${go_out}" "${python_out}" "$(dirname "${descriptor_out}"
   protoc -I . \
     --grpc_out="${cpp_out}" \
     --plugin=protoc-gen-grpc="$(command -v grpc_cpp_plugin)" \
-    "${adapter_proto}"
+    "${adapter_proto}" "${robot_server_proto}"
   protoc -I . \
     --include_imports \
     --descriptor_set_out="${descriptor_out}" \
@@ -51,12 +52,12 @@ mkdir -p "${cpp_out}" "${go_out}" "${python_out}" "$(dirname "${descriptor_out}"
   protoc -I . --go_out=paths=source_relative:"${go_out}" "${proto_files[@]}"
   protoc -I . \
     --go-grpc_out=paths=source_relative:"${go_out}" \
-    "${adapter_proto}"
+    "${adapter_proto}" "${robot_server_proto}"
 
   python3 -m grpc_tools.protoc -I . --python_out="${python_out}" "${proto_files[@]}"
   python3 -m grpc_tools.protoc -I . \
     --grpc_python_out="${python_out}" \
-    "${adapter_proto}"
+    "${adapter_proto}" "${robot_server_proto}"
 )
 
 cp "${root_dir}/packaging/go/go.mod" "${go_out}/go.mod"

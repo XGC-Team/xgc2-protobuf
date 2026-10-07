@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package xgc.robot.v1;
+option go_package = "xgc2/protocols/xgc/robot/v1;robotv1";
+
+import "xgc/robot/v1/message.proto";
+import "xgc/adapter/v1/adapter.proto";
+
+// Hosted by one local process per robot type and actual ROS environment.
+// Runs own member uses, never processes. No command is replayed on reconnect.
+service RobotAdapterServer {
+  rpc ApplyMembers(ApplyMembersRequest) returns (MembersResult);
+  rpc RemoveMembers(RemoveMembersRequest) returns (MembersResult);
+  rpc Execute(ExecuteRequest) returns (xgc.adapter.v1.OperationEvent);
+  rpc SubscribeStatus(StatusRequest) returns (stream StatusBatch);
+  rpc Health(HealthRequest) returns (HealthResponse);
+  rpc Shutdown(HealthRequest) returns (HealthResponse);
+}
+
+// Written mode 0600 by the existing Process Supervisor owner.
+message RobotServerBootstrap {
+  string socket_path = 1;
+  string provider_definition_id = 2;
+  map<string, string> ros_environment = 3;
+}
+
+message MemberIdentity {
+  string target_id = 1;
+  string run_id = 2;
+  string robot_id = 3;
+  uint64 connection_epoch = 4;
+}
+
+message MemberRegistration {
+  MemberIdentity identity = 1;
+  RobotResource configuration = 2;
+}
+
+message ApplyMembersRequest { repeated MemberRegistration members = 1; }
+message RemoveMembersRequest { repeated MemberIdentity members = 1; }
+message MemberResult {
+  MemberIdentity identity = 1;
+  xgc.adapter.v1.AdapterError error = 2;
+}
+message MembersResult { repeated MemberResult members = 1; }
+
+message ExecuteRequest {
+  MemberIdentity identity = 1;
+  xgc.adapter.v1.OperationRequest operation = 2;
+}
+
+message StatusRequest {}
+message MemberStatus {
+  MemberIdentity identity = 1;
+  repeated RobotMessage messages = 2;
+  bool removed = 3;
+}
+// Snapshots and changes contain latest channel values. A slow subscriber does
+// not retain history or apply backpressure to native ROS publishers.
+message StatusBatch { repeated MemberStatus members = 1; }
+message HealthRequest {}
+message HealthResponse { bool serving = 1; }
