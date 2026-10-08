@@ -393,8 +393,12 @@ func TestAdapterRuntimeLinkVerticalSlice(t *testing.T) {
 
 func TestProcessBootstrapPreservesTrustedSpecInputs(t *testing.T) {
 	bootstrap := &AdapterProcessBootstrap{
-		FormatVersion: 2,
-		RuntimeTarget: "unix:///run/xgc2/adapter/runtime.sock",
+		FormatVersion: 3,
+		RuntimeService: &RuntimeServiceReference{
+			TargetId: "local-test", Service: "xgc2.adapter-runtime-link", ApiVersion: "v1",
+			InstanceId: "0123456789abcdef0123456789abcdef", Profile: "grpc.v1",
+			Endpoint: &RuntimeServiceReference_Endpoint{Kind: "unix", Address: "/run/xgc2/adapter/runtime.sock"},
+		},
 		Registration: &RegisterRequest{
 			InstanceId: testInstanceID, ProcessGeneration: testProcessGeneration,
 			DefinitionId: "test-adapter", DefinitionDigest: strings.Repeat("d", 64),
@@ -421,7 +425,8 @@ func TestProcessBootstrapPreservesTrustedSpecInputs(t *testing.T) {
 	if err := proto.Unmarshal(encoded, &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.GetInitialSpec().GetScope().GetAttributes()["tenant"] != "tenant-a" ||
+	if decoded.GetFormatVersion() != 3 || !proto.Equal(decoded.GetRuntimeService(), bootstrap.GetRuntimeService()) ||
+		decoded.GetInitialSpec().GetScope().GetAttributes()["tenant"] != "tenant-a" ||
 		decoded.GetInitialSpec().GetSecrets()[0].GetVersion() != "sha256:secret-version" {
 		t.Fatalf("bootstrap lost canonical scope attributes or secret version: %v", &decoded)
 	}
@@ -608,6 +613,14 @@ func TestAdapterRuntimeContractHasNoDomainLeakage(t *testing.T) {
 			assertDomainNeutralDescriptorName(t, "message", string(message.FullName()))
 			for fieldIndex := 0; fieldIndex < message.Fields().Len(); fieldIndex++ {
 				field := message.Fields().Get(fieldIndex)
+				// Canonical XRPC ServiceRef.profile selects the native transport
+				// (grpc.v1), independent of any product or capability profile.
+				if message.FullName() == "xgc.adapter.v1.RuntimeServiceReference" && field.Name() == "profile" {
+					if field.Kind() != protoreflect.StringKind {
+						t.Fatal("transport profile must be a string")
+					}
+					continue
+				}
 				assertDomainNeutralDescriptorName(t, "field", string(field.FullName()))
 			}
 			for oneofIndex := 0; oneofIndex < message.Oneofs().Len(); oneofIndex++ {

@@ -8,4 +8,4 @@ registry_yaml=${schema_root}/registry/messages.yaml
 
 Name: xgc2-protobuf
 Description: XGC2 language-neutral protobuf schemas and registries
-Version: 0.5.0
+Version: 0.6.0

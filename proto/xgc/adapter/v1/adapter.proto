@@ -191,11 +191,47 @@ message RegisterRequest {
 // It is serialized as a binary protobuf into a mode-0600 file and passed as
 // --adapter-bootstrap-file. The SDK validates registration against initial_spec
 // before it connects; applications must not reconstruct these proofs.
+// Bootstrap binding for the actual hosting process. This has the canonical
+// XRPC ServiceRef shape; adapter registration identity is a separate fence.
+message RuntimeServiceReference {
+  string target_id = 1;
+  string service = 2;
+  string api_version = 3;
+  string instance_id = 4;
+  string profile = 5;
+  message Endpoint {
+    string kind = 1;
+    string address = 2;
+  }
+  Endpoint endpoint = 6;
+}
+
+// Effective startup policy, copied from the shared XRPC resolver. This is an
+// observation only; deployment changes require a new process incarnation.
+message RuntimePolicyField {
+  string name = 1;
+  oneof value { int64 integer_value = 2; string text_value = 3; }
+  string source = 4;
+  string source_detail = 5;
+  bool dynamic = 6;
+  bool has_ceiling = 7;
+  int64 ceiling = 8;
+  bool has_maximum = 9;
+  int64 maximum = 10;
+  string unit = 11;
+  string capability = 12;
+}
+message RuntimePolicySnapshot {
+  uint64 revision = 1;
+  repeated RuntimePolicyField fields = 2;
+}
+
 message AdapterProcessBootstrap {
   uint32 format_version = 1;
-  string runtime_target = 2;
+  reserved 2;
   RegisterRequest registration = 3;
   AdapterInstanceSpec initial_spec = 4;
+  RuntimeServiceReference runtime_service = 5;
 }
 
 message RegisterResponse {

@@ -160,10 +160,17 @@ without domain interpretation, avoiding lossy spec persistence.
 
 The Process Supervisor writes a binary `AdapterProcessBootstrap` file with mode
 0600 and starts the process with `--adapter-bootstrap-file PATH`. It contains the
-Runtime target, trusted `RegisterRequest`, and first complete
+format version 3, an exact XRPC `RuntimeServiceReference` (target, service,
+API version, transport profile, absolute Unix endpoint and process incarnation),
+trusted `RegisterRequest`, and first complete
 `AdapterInstanceSpec`. The SDK validates identity, process generation, contract
 grants, scope attributes, and pinned secret versions before connecting; native
 applications register handlers but do not synthesize identity proofs.
+The retired string Runtime target at field 2 is reserved. An adapter's registered
+instance identity is distinct from the hosting service incarnation; every native
+RPC and finite stream binds the latter using shared XRPC metadata. Renewing a
+transport pair retains the registered session, terminal acknowledgement ledger
+and native capability state without re-registering or replaying mutations.
 
 `xgc.robot.v1.RobotAdapterSpec` is a typed domain configuration carried in
 `AdapterInstanceSpec.configuration`. It contains the immutable Robot selection

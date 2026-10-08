@@ -35,7 +35,7 @@ contracts belong to the concrete Adapter product that implements them.
   Host-initiated, credit-controlled source streams.
 
 The Process Supervisor passes exactly one mode-0600 binary
-`AdapterProcessBootstrap` file containing the Runtime target, registration
+`AdapterProcessBootstrap` format-v3 file containing the exact Runtime ServiceRef, registration
 identity/proofs/contracts, and first complete instance spec. The SDK, Host, and
 Supervisor therefore share one protobuf mapping instead of reconstructing
 security-sensitive bootstrap fields in each Adapter.
@@ -132,9 +132,15 @@ The smoke test:
   workflow, telemetry, UI, and related asset/run concepts) from the complete
   Adapter Runtime Link surface.
 
-CI also runs `buf breaking` inside a protocol epoch. Product version `0.5.0-3`
-starts a deliberate pre-1.0 breaking epoch for Runtime Link protocol v2 and its
-Host-initiated, source-only stream contract.
+CI runs `buf breaking` inside each protocol epoch. Product version `0.6.0-1`
+starts a deliberate pre-1.0 breaking epoch for bootstrap format v3: the Supervisor
+hands off a complete instance-bound `RuntimeServiceReference`, with an absolute
+Unix address. Field 2 (`runtime_target`) is reserved. Runtime Link protocol v2,
+source credit, durable terminal acknowledgements, and operation semantics remain
+unchanged. Robot type hosts add explicit instance discovery and effective startup
+policy observations; all calls require the shared XRPC native deadline and metadata
+fences. Consumers must generate bindings from this epoch and use ABI 3 of the
+C++ Runtime Link client.
 
 ## Debian schema development package
 

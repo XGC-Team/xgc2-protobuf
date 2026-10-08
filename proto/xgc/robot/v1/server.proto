@@ -9,6 +9,9 @@ import "xgc/adapter/v1/adapter.proto";
 // Hosted by one local process per robot type and actual ROS environment.
 // Runs own member uses, never processes. No command is replayed on reconnect.
 service RobotAdapterServerService {
+  // Explicit instance discovery. All other methods bind this returned instance
+  // through XRPC metadata and require an actual native gRPC caller deadline.
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
   rpc ApplyMembers(ApplyMembersRequest) returns (ApplyMembersResponse);
   rpc RemoveMembers(RemoveMembersRequest) returns (RemoveMembersResponse);
   rpc Execute(ExecuteRequest) returns (ExecuteResponse);
@@ -22,6 +25,18 @@ message RobotServerBootstrap {
   string socket_path = 1;
   string provider_definition_id = 2;
   map<string, string> ros_environment = 3;
+  string target_id = 4;
+}
+
+message DescribeRequest {}
+message DescribeResponse {
+  xgc.adapter.v1.RuntimeServiceReference service_ref = 1;
+  string provider_definition_id = 2;
+  uint32 maximum_robots = 3;
+  uint32 maximum_members = 4;
+  uint32 maximum_batch_members = 5;
+  uint32 maximum_commands_per_robot = 6;
+  xgc.adapter.v1.RuntimePolicySnapshot runtime_policy = 7;
 }
 
 message MemberIdentity {
@@ -61,6 +76,11 @@ message MemberStatus {
 // not retain history or apply backpressure to native ROS publishers.
 message SubscribeStatusResponse { repeated MemberStatus members = 1; }
 message HealthRequest {}
-message HealthResponse { bool serving = 1; }
+message HealthResponse {
+  bool serving = 1;
+  string instance_id = 2;
+  uint32 robots = 3;
+  uint32 members = 4;
+}
 message ShutdownRequest {}
 message ShutdownResponse { bool serving = 1; }
