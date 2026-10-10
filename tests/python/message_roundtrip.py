@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
+from google.protobuf.descriptor import FieldDescriptor
+
 from xgc.registry.v1 import message_registry
 from xgc.robot.v1 import message_pb2 as robot_message_pb2
+from xgc.robot.v1 import server_pb2
 from xgc.semantic.aerial.v1 import control_pb2
 from xgc.semantic.common.v1 import acceleration_pb2
 from xgc.semantic.ground.v1 import control_pb2 as ground_control_pb2
@@ -52,8 +55,53 @@ def assert_domain_boundary_registry():
         assert isinstance(message_registry.new_message(message_id), message_type)
 
 
+def assert_robot_server_readiness_contract():
+    # Field numbers are wire identity: the first seven response fields predate
+    # readiness and must never move, and the instance fence stays in service_ref.
+    def fields(message_type):
+        return {
+            field.name: (field.number, field.type)
+            for field in message_type.DESCRIPTOR.fields
+        }
+
+    assert fields(server_pb2.DescribeRequest) == {
+        "wait_ready_ms": (1, FieldDescriptor.TYPE_UINT32),
+    }
+    assert fields(server_pb2.DescribeResponse) == {
+        "service_ref": (1, FieldDescriptor.TYPE_MESSAGE),
+        "provider_definition_id": (2, FieldDescriptor.TYPE_STRING),
+        "maximum_robots": (3, FieldDescriptor.TYPE_UINT32),
+        "maximum_members": (4, FieldDescriptor.TYPE_UINT32),
+        "maximum_batch_members": (5, FieldDescriptor.TYPE_UINT32),
+        "maximum_commands_per_robot": (6, FieldDescriptor.TYPE_UINT32),
+        "runtime_policy": (7, FieldDescriptor.TYPE_MESSAGE),
+        "ready": (8, FieldDescriptor.TYPE_BOOL),
+        "facts_json": (9, FieldDescriptor.TYPE_STRING),
+    }
+    assert "instance_id" in server_pb2.DescribeResponse.DESCRIPTOR.fields_by_name[
+        "service_ref"
+    ].message_type.fields_by_name
+
+    reply = server_pb2.DescribeResponse(
+        ready=True,
+        facts_json='{"ros_master_uri":"http://127.0.0.1:11311","ros_master_run_id":"run"}',
+    )
+    reply.service_ref.instance_id = "instance"
+    assert server_pb2.DescribeResponse.FromString(reply.SerializeToString()) == reply
+    request = server_pb2.DescribeRequest(wait_ready_ms=30000)
+    assert server_pb2.DescribeRequest.FromString(request.SerializeToString()) == request
+
+    # Peers from before readiness stay compatible: an empty request means no
+    # wait, and a reply without the new fields is not ready.
+    assert server_pb2.DescribeRequest.FromString(b"").wait_ready_ms == 0
+    legacy = server_pb2.DescribeResponse.FromString(b"\x12\x01p")  # provider "p"
+    assert legacy.provider_definition_id == "p"
+    assert not legacy.ready and legacy.facts_json == ""
+
+
 def main():
     assert_domain_boundary_registry()
+    assert_robot_server_readiness_contract()
     payload = control_pb2.ModeRequest(mode="OFFBOARD").SerializeToString()
     metadata = message_registry.METADATA[3202]
     envelope = message_pb2.Message(

@@ -182,3 +182,20 @@ domain-free.
 Large files and artifacts remain outside this protocol. A capability may define
 a bounded stream of typed messages, but the Runtime Link is not a generic file
 transfer or unbounded telemetry transport.
+
+## Robot type-server discovery and readiness
+
+A robot type server (`xgc.robot.v1.RobotAdapterServerService`) is a Run-owned
+process. The Run that starts it stops it, and it serves exactly one ROS master
+for its whole life. `Describe` is its only unfenced call: it returns the process
+incarnation (`service_ref`, whose `instance_id` every other call binds through
+XRPC metadata) together with the readiness observation described by the field
+comments in `xgc/robot/v1/server.proto`.
+
+- Readiness is reported by the process itself. It is never inferred from a live
+  socket and never probed from outside the process.
+- A caller that needs to wait for readiness holds one `Describe` call with
+  `wait_ready_ms` under its own deadline. Neither side polls.
+- A replaced ROS master is not re-bound in place. The server exits and the
+  owning Run fails or restarts it explicitly, so a stale binding is never
+  served.

@@ -5,6 +5,7 @@
 
 #include "xgc/registry/v1/message_registry.hpp"
 #include "xgc/robot/v1/message.pb.h"
+#include "xgc/robot/v1/server.pb.h"
 #include "xgc/semantic/aerial/v1/control.pb.h"
 #include "xgc/semantic/common/v1/acceleration.pb.h"
 #include "xgc/semantic/ground/v1/control.pb.h"
@@ -91,6 +92,39 @@ int main() {
   assert(dynamic_cast<xgc::semantic::ground::v1::MotionIntentRequest*>(
              xgc::registry::v1::newMessage(3204).get()) != nullptr);
   assert(xgc::registry::v1::newMessage(5001) == nullptr);
+
+  // Describe is the readiness contract of Run-owned robot type servers: the
+  // ROS1 type servers implement it in C++ and Core calls it with wait_ready_ms.
+  xgc::robot::v1::DescribeRequest describe_request;
+  describe_request.set_wait_ready_ms(30000);
+  std::string describe_request_bytes;
+  assert(describe_request.SerializeToString(&describe_request_bytes));
+  xgc::robot::v1::DescribeRequest parsed_request;
+  assert(parsed_request.ParseFromString(describe_request_bytes));
+  assert(parsed_request.wait_ready_ms() == 30000u);
+
+  xgc::robot::v1::DescribeResponse describe_response;
+  describe_response.mutable_service_ref()->set_instance_id("instance");
+  describe_response.set_ready(true);
+  describe_response.set_facts_json(
+      "{\"ros_master_uri\":\"http://127.0.0.1:11311\",\"ros_master_run_id\":\"run\"}");
+  std::string describe_response_bytes;
+  assert(describe_response.SerializeToString(&describe_response_bytes));
+  xgc::robot::v1::DescribeResponse parsed_response;
+  assert(parsed_response.ParseFromString(describe_response_bytes));
+  assert(parsed_response.ready());
+  assert(parsed_response.service_ref().instance_id() == "instance");
+  assert(parsed_response.facts_json() == describe_response.facts_json());
+
+  // Peers from before readiness stay compatible: an empty request means no
+  // wait, and a reply without the new fields is not ready.
+  xgc::robot::v1::DescribeRequest legacy_request;
+  assert(legacy_request.ParseFromString(""));
+  assert(legacy_request.wait_ready_ms() == 0u);
+  xgc::robot::v1::DescribeResponse legacy_response;
+  assert(legacy_response.ParseFromString(std::string("\x12\x01p", 3)));  // provider "p"
+  assert(legacy_response.provider_definition_id() == "p");
+  assert(!legacy_response.ready() && legacy_response.facts_json().empty());
 
   std::cout << "cpp roundtrip ok: " << routed.robot_id() << " " << routed.channel_id()
             << " mode=" << mode->mode() << std::endl;

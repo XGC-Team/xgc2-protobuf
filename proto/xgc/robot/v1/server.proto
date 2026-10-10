@@ -9,8 +9,9 @@ import "xgc/adapter/v1/adapter.proto";
 // Hosted by one local process per robot type and actual ROS environment.
 // Runs own member uses, never processes. No command is replayed on reconnect.
 service RobotAdapterServerService {
-  // Explicit instance discovery. All other methods bind this returned instance
-  // through XRPC metadata and require an actual native gRPC caller deadline.
+  // Explicit instance discovery and readiness. All other methods bind this
+  // returned instance through XRPC metadata and require an actual native gRPC
+  // caller deadline.
   rpc Describe(DescribeRequest) returns (DescribeResponse);
   rpc ApplyMembers(ApplyMembersRequest) returns (ApplyMembersResponse);
   rpc RemoveMembers(RemoveMembersRequest) returns (RemoveMembersResponse);
@@ -28,8 +29,17 @@ message RobotServerBootstrap {
   string target_id = 4;
 }
 
-message DescribeRequest {}
+message DescribeRequest {
+  // Readiness wait budget in milliseconds, 0..30000; larger values are
+  // INVALID_ARGUMENT. Zero answers at once with the current state. A positive
+  // value holds the reply, without polling, until the server is ready or the
+  // budget elapses and then answers with the current state: an elapsed budget
+  // is ready=false, not an error. The caller's deadline must exceed the wait.
+  uint32 wait_ready_ms = 1;
+}
 message DescribeResponse {
+  // Identity of this process incarnation: service, api_version and
+  // instance_id (the fence every other call binds) are carried here only.
   xgc.adapter.v1.RuntimeServiceReference service_ref = 1;
   string provider_definition_id = 2;
   uint32 maximum_robots = 3;
@@ -37,6 +47,16 @@ message DescribeResponse {
   uint32 maximum_batch_members = 5;
   uint32 maximum_commands_per_robot = 6;
   xgc.adapter.v1.RuntimePolicySnapshot runtime_policy = 7;
+  // True when the process is alive and every domain dependency that makes it
+  // valid holds: it is bound to the ROS master named in facts_json and that
+  // master has not been replaced. A listening socket alone is not readiness.
+  bool ready = 8;
+  // The domain dependency facts as one JSON object; "{}" when there are none.
+  // A ROS type server always reports "ros_master_uri" (the master it is bound
+  // to) and "ros_master_run_id" (that master's run id, which changes whenever
+  // the master restarts). A server whose master was replaced exits instead of
+  // describing the new master.
+  string facts_json = 9;
 }
 
 message MemberIdentity {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	adapterv1 "xgc2/protocols/xgc/adapter/v1"
 	robotv1 "xgc2/protocols/xgc/robot/v1"
 	aerialv1 "xgc2/protocols/xgc/semantic/aerial/v1"
@@ -193,5 +194,86 @@ func TestPx4DiagnosticMessagesAreRegistered(t *testing.T) {
 		if created.ProtoReflect().Descriptor().FullName() != test.message.ProtoReflect().Descriptor().FullName() {
 			t.Fatalf("message ID %d resolved to %s", test.id, created.ProtoReflect().Descriptor().FullName())
 		}
+	}
+}
+
+// Describe is the readiness contract of Run-owned robot type servers. Field
+// numbers are wire identity: the first seven response fields predate readiness
+// and must never move, and the instance fence stays in service_ref.
+func TestRobotServerDescribeCarriesReadinessContract(t *testing.T) {
+	type field struct {
+		name   protoreflect.Name
+		number protoreflect.FieldNumber
+		kind   protoreflect.Kind
+	}
+	tests := []struct {
+		message proto.Message
+		fields  []field
+	}{
+		{&robotv1.DescribeRequest{}, []field{
+			{"wait_ready_ms", 1, protoreflect.Uint32Kind},
+		}},
+		{&robotv1.DescribeResponse{}, []field{
+			{"service_ref", 1, protoreflect.MessageKind},
+			{"provider_definition_id", 2, protoreflect.StringKind},
+			{"maximum_robots", 3, protoreflect.Uint32Kind},
+			{"maximum_members", 4, protoreflect.Uint32Kind},
+			{"maximum_batch_members", 5, protoreflect.Uint32Kind},
+			{"maximum_commands_per_robot", 6, protoreflect.Uint32Kind},
+			{"runtime_policy", 7, protoreflect.MessageKind},
+			{"ready", 8, protoreflect.BoolKind},
+			{"facts_json", 9, protoreflect.StringKind},
+		}},
+	}
+	for _, test := range tests {
+		descriptor := test.message.ProtoReflect().Descriptor()
+		if descriptor.Fields().Len() != len(test.fields) {
+			t.Fatalf("%s has %d fields, want %d", descriptor.FullName(), descriptor.Fields().Len(), len(test.fields))
+		}
+		for _, want := range test.fields {
+			got := descriptor.Fields().ByName(want.name)
+			if got == nil || got.Number() != want.number || got.Kind() != want.kind {
+				t.Fatalf("%s.%s must be field %d of kind %s", descriptor.FullName(), want.name, want.number, want.kind)
+			}
+		}
+	}
+	reference := (&robotv1.DescribeResponse{}).ProtoReflect().Descriptor().Fields().ByName("service_ref").Message()
+	if reference.Fields().ByName("instance_id") == nil {
+		t.Fatal("DescribeResponse.service_ref must carry the instance fence")
+	}
+
+	reply := &robotv1.DescribeResponse{
+		ServiceRef: &adapterv1.RuntimeServiceReference{InstanceId: "instance"},
+		Ready:      true,
+		FactsJson:  `{"ros_master_uri":"http://127.0.0.1:11311","ros_master_run_id":"run"}`,
+	}
+	encoded, err := proto.Marshal(reply)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded robotv1.DescribeResponse
+	if err := proto.Unmarshal(encoded, &decoded); err != nil || !proto.Equal(reply, &decoded) {
+		t.Fatalf("readiness reply did not round-trip: %v", err)
+	}
+	encoded, err = proto.Marshal(&robotv1.DescribeRequest{WaitReadyMs: 30000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var request robotv1.DescribeRequest
+	if err := proto.Unmarshal(encoded, &request); err != nil || request.GetWaitReadyMs() != 30000 {
+		t.Fatalf("readiness request did not round-trip: %v", err)
+	}
+
+	// Peers from before readiness stay compatible: an empty request means no
+	// wait, and a reply without the new fields is not ready.
+	var legacyRequest robotv1.DescribeRequest
+	if err := proto.Unmarshal(nil, &legacyRequest); err != nil || legacyRequest.GetWaitReadyMs() != 0 {
+		t.Fatalf("empty request must mean no wait: %v", err)
+	}
+	var legacyReply robotv1.DescribeResponse
+	providerOnly := []byte{0x12, 0x01, 'p'} // provider_definition_id = "p"
+	if err := proto.Unmarshal(providerOnly, &legacyReply); err != nil ||
+		legacyReply.GetProviderDefinitionId() != "p" || legacyReply.GetReady() || legacyReply.GetFactsJson() != "" {
+		t.Fatalf("reply without readiness fields must decode as not ready: %v", err)
 	}
 }

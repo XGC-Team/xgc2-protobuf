@@ -9,7 +9,7 @@ message registry.
 ```text
 proto/xgc/adapter/v1/   Capability-first Adapter Runtime Link
 proto/xgc/v1/           Domain-neutral payload, schema, time, and message types
-proto/xgc/robot/v1/     Robot-domain routing wrapper
+proto/xgc/robot/v1/     Robot-domain routing wrapper and type-server service
 proto/xgc/semantic/     Reusable semantic payload schemas
 registry/               Global semantic message ID registry
 tools/                  Reproducible generation and validation
@@ -83,6 +83,29 @@ not coupled to Adapter instance scope.
 
 See [docs/architecture.md](docs/architecture.md) for protocol invariants.
 
+## Robot type servers
+
+`xgc.robot.v1.RobotAdapterServerService` is hosted by one Run-owned process per
+robot type and ROS master. Its `Describe` method is also the readiness contract
+of that process: alive does not mean ready.
+
+- `DescribeRequest.wait_ready_ms` (0..30000, default 0) lets the caller hold one
+  outstanding call until the server is ready instead of polling. An elapsed wait
+  is answered with the current state (`ready = false`), not an error.
+- `DescribeResponse.ready` is true when the process is alive and the domain
+  dependencies that make it valid hold.
+- `DescribeResponse.facts_json` is a JSON object with those dependency facts; a
+  ROS type server always reports `ros_master_uri` and `ros_master_run_id`. A
+  server whose ROS master was replaced exits instead of describing the new one.
+- The instance fence stays `DescribeResponse.service_ref.instance_id`; every
+  other call binds it through XRPC metadata.
+
+The ros1-adapter type servers implement `Describe`. Core's process supervisor
+starts a server, calls `Describe` with `wait_ready_ms`, and treats the reply as
+the only readiness signal. The new fields extend the existing messages without
+touching their field numbers: an empty request means no wait, and a reply
+without the new fields is not ready.
+
 ## Generate
 
 Required tools:
@@ -122,7 +145,9 @@ The smoke test:
 
 - generates C++, Go, Python, gRPC, descriptors, and registries;
 - verifies semantic payload registry round trips in C++, Go, and Python;
-- verifies the robot-domain wrapper around a generic message;
+- verifies the robot-domain wrapper around a generic message and the field
+  numbers and wire compatibility of the type-server `Describe` readiness
+  contract;
 - exercises Register, Control, and Work over an in-memory Go gRPC transport;
 - verifies exact contract identity, operation deadline/idempotency, and
   independent byte/message stream credit with endpoint-schema-defined opaque
