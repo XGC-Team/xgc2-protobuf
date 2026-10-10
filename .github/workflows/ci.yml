@@ -78,7 +78,9 @@ jobs:
 
   deb-build-and-smoke:
     name: Debian ${{ matrix.distribution }} (Architecture all)
-    needs: [source-tests, package-compliance]
+    # package-compliance is a pure quality job: it runs in parallel and is not a
+    # dependency (central workflow audit rule workflow-quality-gates-build).
+    needs: source-tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
