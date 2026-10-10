@@ -79,6 +79,14 @@ if [[ -z "${apt_distributions}" ]]; then
   exit 1
 fi
 
+# The installed pkg-config version is the product version without its Debian
+# revision; consumers read it as the schema release they build against.
+pkgconfig_version="$(sed -n 's/^Version:[[:space:]]*//p' .xgc2/pkgconfig/xgc2-protobuf.pc)"
+if [[ "${pkgconfig_version}" != "${product_version%-*}" ]]; then
+  echo "pkg-config Version ${pkgconfig_version:-<empty>} must be ${product_version%-*} (product version ${product_version} without its revision)" >&2
+  exit 1
+fi
+
 IFS=',' read -r -a distributions <<< "${apt_distributions}"
 for distribution in "${distributions[@]}"; do
   distribution="${distribution//[[:space:]]/}"

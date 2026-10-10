@@ -157,15 +157,26 @@ The smoke test:
   workflow, telemetry, UI, and related asset/run concepts) from the complete
   Adapter Runtime Link surface.
 
-CI runs `buf breaking` inside each protocol epoch. Product version `0.6.0-1`
-starts a deliberate pre-1.0 breaking epoch for bootstrap format v3: the Supervisor
-hands off a complete instance-bound `RuntimeServiceReference`, with an absolute
-Unix address. Field 2 (`runtime_target`) is reserved. Runtime Link protocol v2,
-source credit, durable terminal acknowledgements, and operation semantics remain
-unchanged. Robot type hosts add explicit instance discovery and effective startup
-policy observations; all calls require the shared XRPC native deadline and metadata
-fences. Consumers must generate bindings from this epoch and use ABI 3 of the
-C++ Runtime Link client.
+## Protocol epochs and releases
+
+CI runs `buf breaking` inside each protocol epoch. Before 1.0 the minor version
+is the epoch, so a minor release resets the baseline of `tools/check-breaking.sh`.
+Consumers regenerate their bindings from the release they pin.
+
+- `0.7.0-1` starts epoch 0.7. Relative to `0.6.0-1` it only adds fields, so
+  `buf breaking` against the previous release passes. `Describe` of the robot
+  type-server service carries the readiness contract described in
+  [Robot type servers](#robot-type-servers): `wait_ready_ms`, `ready` and
+  `facts_json`. Registered message IDs, versions and fingerprints are
+  unchanged. Consumers pin this release to use it: the ros1-adapter type
+  servers implement `Describe` and Core's process supervisor calls it.
+- `0.6.0-1` started a deliberate pre-1.0 breaking epoch for bootstrap format v3:
+  the Supervisor hands off a complete instance-bound `RuntimeServiceReference`,
+  with an absolute Unix address. Field 2 (`runtime_target`) is reserved. Runtime
+  Link protocol v2, source credit, durable terminal acknowledgements, and
+  operation semantics remain unchanged. Robot type hosts add explicit instance
+  discovery and effective startup policy observations; all calls require the
+  shared XRPC native deadline and metadata fences.
 
 ## Debian schema development package
 
