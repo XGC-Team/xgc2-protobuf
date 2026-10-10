@@ -95,7 +95,7 @@ of that process: alive does not mean ready.
 - `DescribeResponse.ready` is true when the process is alive and the domain
   dependencies that make it valid hold.
 - `DescribeResponse.facts_json` is a JSON object with those dependency facts; a
-  ROS type server always reports `ros_master_uri` and `ros_master_run_id`. A
+  ROS type server reports at least `ros_master_uri` and `ros_master_run_id`. A
   server whose ROS master was replaced exits instead of describing the new one.
 - The instance fence stays `DescribeResponse.service_ref.instance_id`; every
   other call binds it through XRPC metadata.

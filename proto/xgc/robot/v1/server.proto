@@ -52,10 +52,11 @@ message DescribeResponse {
   // master has not been replaced. A listening socket alone is not readiness.
   bool ready = 8;
   // The domain dependency facts as one JSON object; "{}" when there are none.
-  // A ROS type server always reports "ros_master_uri" (the master it is bound
-  // to) and "ros_master_run_id" (that master's run id, which changes whenever
-  // the master restarts). A server whose master was replaced exits instead of
-  // describing the new master.
+  // A ROS type server reports at least "ros_master_uri" (the master it is
+  // bound to) and "ros_master_run_id" (that master's run id, which changes
+  // whenever the master restarts; empty until the server has read it, so never
+  // empty when ready). Readers ignore keys they do not know. A server whose
+  // master was replaced exits instead of describing the new master.
   string facts_json = 9;
 }
 
