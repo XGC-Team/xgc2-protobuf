@@ -23,36 +23,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          # tools/check-breaking.sh reads the base branch's product metadata.
           fetch-depth: 0
-  package-compliance:
-    name: Package compliance
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-  deb-build-and-smoke:
-    name: Debian ${{ matrix.distribution }} (Architecture all)
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - distribution: focal
-            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0
-          - distribution: jammy
-            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-jammy-dev:1.0.0
-          - distribution: noble
-            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-noble-dev:1.0.0
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
 
       - name: Lint, generate, and test in the XGC2 jammy image
         env:
@@ -79,17 +51,51 @@ jobs:
           git diff --check HEAD
           test -z "$(git status --short --untracked-files=no)"
 
+  package-compliance:
+    name: Package compliance
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Check whitespace and package contract
         run: |
           set -euo pipefail
           git diff --check HEAD
-          docker pull ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0
+          image=ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0
+          docker pull "${image}"
           docker run --rm --network none \
             -v "${GITHUB_WORKSPACE}:/work" -w /work \
-            ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0 \
-            bash -lc './.xgc2/scripts/check_package_compliance.sh'
+            "${image}" \
+            bash -lc '
+              set -euo pipefail
+              git config --global --add safe.directory /work
+              ./.xgc2/scripts/check_package_compliance.sh
+            '
 
+  deb-build-and-smoke:
+    name: Debian ${{ matrix.distribution }} (Architecture all)
+    needs: [source-tests, package-compliance]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distribution: focal
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-focal-dev:1.0.0
+          - distribution: jammy
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-jammy-dev:1.0.0
+          - distribution: noble
+            image: ghcr.io/xgc-team/xgc2-images/xgc2-build-noble-dev:1.0.0
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Build deb and run installed smoke test
         run: |
@@ -102,13 +108,11 @@ jobs:
             "${{ matrix.image }}" \
             bash -lc '
               set -euo pipefail
-              for pkg in ca-certificates cmake dpkg-dev fakeroot git make \
+              packages=(
+                ca-certificates cmake dpkg-dev fakeroot make
                 pkg-config protobuf-compiler python3 python3-protobuf python3-yaml
-              do
-                dpkg -s "${pkg}" >/dev/null
-              done
-              git config --global --add safe.directory /work
-              ./.xgc2/scripts/check_package_compliance.sh
+              )
+              dpkg -s "${packages[@]}" >/dev/null
               ./.xgc2/scripts/build_deb.sh
               dpkg -i ./debs/xgc2-protobuf-dev_*.deb
               ./.xgc2/scripts/smoke_test_installed.sh

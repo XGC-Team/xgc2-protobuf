@@ -20,9 +20,13 @@ if [[ -n "${nested_git}" ]]; then
   exit 1
 fi
 
-if git ls-files 2>/dev/null | grep -E '(^|/)(build|devel|install|\.ci|generated)(/|$)' >/dev/null; then
+# A failing git (for example an untrusted bind-mounted checkout) must fail the
+# check instead of reporting that nothing is tracked.
+tracked_files="$(git ls-files)"
+tracked_artifacts="$(grep -E '(^|/)(build|devel|install|\.ci|generated)(/|$)' <<<"${tracked_files}" || true)"
+if [[ -n "${tracked_artifacts}" ]]; then
   echo "Generated build artifacts are tracked." >&2
-  git ls-files | grep -E '(^|/)(build|devel|install|\.ci|generated)(/|$)' >&2
+  echo "${tracked_artifacts}" >&2
   exit 1
 fi
 
