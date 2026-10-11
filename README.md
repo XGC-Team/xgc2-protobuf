@@ -173,7 +173,7 @@ Consumers regenerate their bindings from the release they pin.
 - `0.6.0-1` started a deliberate pre-1.0 breaking epoch for bootstrap format v3:
   the Supervisor hands off a complete instance-bound `RuntimeServiceReference`,
   with an absolute Unix address. Field 2 (`runtime_target`) is reserved. Runtime
-  Link protocol v2, source credit, durable terminal acknowledgements, and
+  Link protocol generation 2, source credit, durable terminal acknowledgements, and
   operation semantics remain unchanged. Robot type hosts add explicit instance
   discovery and effective startup policy observations; all calls require the
   shared XRPC native deadline and metadata fences.
