@@ -10,6 +10,10 @@ lint:
   ignore_only:
     ENUM_VALUE_PREFIX:
       - proto/xgc/semantic/common/v1/telemetry.proto
+    # Reset's native REASON_NONE=0 means a known absence of a reason. Keep
+    # that wire meaning instead of renaming it to an unknown/unspecified state.
+    ENUM_ZERO_VALUE_SUFFIX:
+      - proto/xgc/semantic/ground/v1/reset.proto
 breaking:
   use:
     - FILE

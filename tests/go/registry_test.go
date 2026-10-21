@@ -125,6 +125,10 @@ func TestDomainBoundaryMessagesAreRegistered(t *testing.T) {
 			fullName: "xgc.semantic.ground.v1.JointStateSet", message: &groundv1.JointStateSet{},
 		},
 		{
+			id: 3105, version: 1, fingerprint: 4388678013613103954,
+			fullName: "xgc.semantic.ground.v1.ResetStatus", message: &groundv1.ResetStatus{},
+		},
+		{
 			id: 2008, version: 1, fingerprint: 4994560962731678057,
 			fullName: "xgc.semantic.common.v1.AccelerationEstimate", message: &commonv1.AccelerationEstimate{},
 		},
@@ -145,6 +149,69 @@ func TestDomainBoundaryMessagesAreRegistered(t *testing.T) {
 		if created.ProtoReflect().Descriptor().FullName() != test.message.ProtoReflect().Descriptor().FullName() {
 			t.Fatalf("message ID %d resolved to %s", test.id, created.ProtoReflect().Descriptor().FullName())
 		}
+	}
+}
+
+func TestResetStatusRoundTrip(t *testing.T) {
+	if groundv1.ResetPhase_RESET_PHASE_UNSPECIFIED != 0 ||
+		groundv1.ResetPhase_RESET_PHASE_IDLE != 1 ||
+		groundv1.ResetPhase_RESET_PHASE_DONE != 6 {
+		t.Fatal("ResetPhase numbers diverged from the reviewed enum")
+	}
+	if groundv1.ResetOutcome_RESET_OUTCOME_ARRIVED != 1 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_TIMEOUT != 2 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_STOPPED != 3 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_REJECTED_NO_TARGET != 10 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_REJECTED_NO_COORDINATOR != 11 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_REJECTED_BY_COORDINATOR != 12 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_INFEASIBLE != 20 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_ABORTED_DEVIATION != 30 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_ABORTED_STALLED != 31 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_ABORTED_COORDINATOR_LOST != 32 ||
+		groundv1.ResetOutcome_RESET_OUTCOME_ABORTED_UNHEALTHY != 33 {
+		t.Fatal("ResetOutcome numbers diverged from ugv_reset_msgs")
+	}
+	if groundv1.ResetReason_RESET_REASON_NONE != 0 ||
+		groundv1.ResetReason_RESET_REASON_SCENE_CHANGED != 26 {
+		t.Fatal("ResetReason numbers diverged from ResetGrant")
+	}
+	statusDesc := (&groundv1.ResetStatus{}).ProtoReflect().Descriptor()
+	resultDesc := (&groundv1.ResetResult{}).ProtoReflect().Descriptor()
+	if statusDesc.Messages().Len() != 0 || resultDesc.Parent() != statusDesc.Parent() {
+		t.Fatal("ResetResult must stay a top-level message")
+	}
+	status := &groundv1.ResetStatus{
+		Generation: 7,
+		Phase:      groundv1.ResetPhase_RESET_PHASE_DONE,
+		Result: &groundv1.ResetResult{
+			Outcome:            groundv1.ResetOutcome_RESET_OUTCOME_ARRIVED,
+			Reason:             groundv1.ResetReason_RESET_REASON_GOAL_OCCUPIED,
+			FinalPlanarErrorM:  0.04,
+			FinalYawErrorRad:   0.02,
+			DurationS:          31,
+			Detail:             "goal occupied by ugv3",
+			SourceStampNs:      123,
+		},
+	}
+	encoded, err := proto.Marshal(status)
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadata, ok := Lookup(3105)
+	if !ok || metadata.Version != 1 || metadata.Fingerprint != 4388678013613103954 ||
+		metadata.FullName != "xgc.semantic.ground.v1.ResetStatus" {
+		t.Fatalf("ResetStatus registry metadata: %#v", metadata)
+	}
+	created, ok := New(3105)
+	if !ok {
+		t.Fatal("ResetStatus is not constructible")
+	}
+	if err := proto.Unmarshal(encoded, created); err != nil {
+		t.Fatal(err)
+	}
+	decoded, ok := created.(*groundv1.ResetStatus)
+	if !ok || !proto.Equal(decoded, status) {
+		t.Fatalf("ResetStatus roundtrip: %#v", created)
 	}
 }
 

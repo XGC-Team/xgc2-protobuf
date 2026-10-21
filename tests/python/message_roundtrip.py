@@ -9,6 +9,7 @@ from xgc.semantic.aerial.v1 import control_pb2
 from xgc.semantic.common.v1 import acceleration_pb2
 from xgc.semantic.ground.v1 import control_pb2 as ground_control_pb2
 from xgc.semantic.ground.v1 import locomotion_pb2
+from xgc.semantic.ground.v1 import reset_pb2
 from xgc.v1 import message_pb2
 
 
@@ -39,6 +40,12 @@ def assert_domain_boundary_registry():
             12421060107119594740,
             locomotion_pb2.JointStateSet,
         ),
+        3105: (
+            "xgc.semantic.ground.v1.ResetStatus",
+            1,
+            4388678013613103954,
+            reset_pb2.ResetStatus,
+        ),
         2008: (
             "xgc.semantic.common.v1.AccelerationEstimate",
             1,
@@ -53,6 +60,48 @@ def assert_domain_boundary_registry():
         assert metadata["version"] == version
         assert metadata["fingerprint"] == fingerprint
         assert isinstance(message_registry.new_message(message_id), message_type)
+
+
+def assert_reset_status_roundtrip():
+    assert reset_pb2.RESET_PHASE_UNSPECIFIED == 0
+    assert reset_pb2.RESET_PHASE_IDLE == 1
+    assert reset_pb2.RESET_PHASE_DONE == 6
+    assert reset_pb2.RESET_OUTCOME_ARRIVED == 1
+    assert reset_pb2.RESET_OUTCOME_TIMEOUT == 2
+    assert reset_pb2.RESET_OUTCOME_STOPPED == 3
+    assert reset_pb2.RESET_OUTCOME_REJECTED_NO_TARGET == 10
+    assert reset_pb2.RESET_OUTCOME_REJECTED_NO_COORDINATOR == 11
+    assert reset_pb2.RESET_OUTCOME_REJECTED_BY_COORDINATOR == 12
+    assert reset_pb2.RESET_OUTCOME_INFEASIBLE == 20
+    assert reset_pb2.RESET_OUTCOME_ABORTED_DEVIATION == 30
+    assert reset_pb2.RESET_OUTCOME_ABORTED_STALLED == 31
+    assert reset_pb2.RESET_OUTCOME_ABORTED_COORDINATOR_LOST == 32
+    assert reset_pb2.RESET_OUTCOME_ABORTED_UNHEALTHY == 33
+    assert reset_pb2.RESET_REASON_NONE == 0
+    assert reset_pb2.RESET_REASON_SCENE_CHANGED == 26
+    assert reset_pb2.ResetResult.DESCRIPTOR.containing_type is None
+    assert reset_pb2.ResetStatus.DESCRIPTOR.nested_types == []
+    status = reset_pb2.ResetStatus(
+        generation=7,
+        phase=reset_pb2.RESET_PHASE_DONE,
+        result=reset_pb2.ResetResult(
+            outcome=reset_pb2.RESET_OUTCOME_ARRIVED,
+            reason=reset_pb2.RESET_REASON_GOAL_OCCUPIED,
+            final_planar_error_m=0.04,
+            final_yaw_error_rad=0.02,
+            duration_s=31.0,
+            detail="goal occupied by ugv3",
+            source_stamp_ns=123,
+        ),
+    )
+    decoded = reset_pb2.ResetStatus.FromString(status.SerializeToString())
+    assert decoded == status
+    assert message_registry.METADATA[3105]["fingerprint"] == 4388678013613103954
+    registered = message_registry.new_message(3105)
+    assert isinstance(registered, reset_pb2.ResetStatus)
+    registered.ParseFromString(status.SerializeToString())
+    assert registered.generation == 7
+    assert registered.result.source_stamp_ns == 123
 
 
 def assert_robot_server_readiness_contract():
@@ -101,6 +150,7 @@ def assert_robot_server_readiness_contract():
 
 def main():
     assert_domain_boundary_registry()
+    assert_reset_status_roundtrip()
     assert_robot_server_readiness_contract()
     payload = control_pb2.ModeRequest(mode="OFFBOARD").SerializeToString()
     metadata = message_registry.METADATA[3202]
