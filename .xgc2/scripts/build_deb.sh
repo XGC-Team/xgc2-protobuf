@@ -63,42 +63,7 @@ mkdir -p \
   "${package_root}/usr/share/doc/${package_name}" \
   "${output_dir}"
 
-mapfile -t proto_files < <(
-  cd "${repo_root}/proto"
-  find xgc -type f -name '*.proto' -print | sort
-)
-if [[ ${#proto_files[@]} -eq 0 ]]; then
-  echo "no protobuf schemas found" >&2
-  exit 1
-fi
-
-(
-  cd "${repo_root}/proto"
-  protoc -I . \
-    --include_imports \
-    --descriptor_set_out="${generated_dir}/descriptors/xgc2-protocols.pb" \
-    "${proto_files[@]}"
-)
-
-python3 "${repo_root}/tools/generate_registry.py" \
-  --registry "${repo_root}/registry/messages.yaml" \
-  --descriptors "${generated_dir}/descriptors/xgc2-protocols.pb" \
-  --cpp-out "${generated_dir}/registry/cpp" \
-  --go-out "${generated_dir}/registry/go" \
-  --python-out "${generated_dir}/registry/python" \
-  --metadata-out "${generated_dir}/registry/registry.json"
-
-cp -a "${repo_root}/proto" "${schema_root}/proto"
-find "${schema_root}/proto" -type d -empty -delete
-cp -a "${generated_dir}/descriptors/xgc2-protocols.pb" "${schema_root}/descriptors/"
-cp -a "${repo_root}/registry/messages.yaml" "${schema_root}/registry/"
-cp -a "${generated_dir}/registry/registry.json" "${schema_root}/registry/"
-cp -a \
-  "${repo_root}/.xgc2/cmake/xgc2_protobufConfig.cmake" \
-  "${package_root}/usr/share/cmake/xgc2_protobuf/"
-cp -a \
-  "${repo_root}/.xgc2/pkgconfig/xgc2-protobuf.pc" \
-  "${package_root}/usr/share/pkgconfig/"
+"${script_dir}/install_source.sh" "${generated_dir}" "${package_root}"
 cp -a "${repo_root}/README.md" "${package_root}/usr/share/doc/${package_name}/"
 cp -a "${repo_root}/docs/." "${package_root}/usr/share/doc/${package_name}/"
 

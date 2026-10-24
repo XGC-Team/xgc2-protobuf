@@ -197,3 +197,10 @@ sudo apt update
 sudo apt install xgc2-protobuf-dev
 pkg-config --variable=proto_root xgc2-protobuf
 ```
+
+### Source installation
+
+`.xgc2/scripts/install_source.sh BUILD_DIR INSTALL_ROOT` generates and stages the
+schema registry and CMake/pkg-config discovery files without APT or Docker.
+`build_deb.sh` uses this same source-install entry before adding Debian metadata.
+The caller supplies `protoc`, Python/YAML/protobuf and an isolated output root.
