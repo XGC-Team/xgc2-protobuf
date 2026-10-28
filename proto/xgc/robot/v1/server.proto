@@ -16,7 +16,13 @@ service RobotAdapterServerService {
   rpc ApplyMembers(ApplyMembersRequest) returns (ApplyMembersResponse);
   rpc RemoveMembers(RemoveMembersRequest) returns (RemoveMembersResponse);
   rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+  rpc InstallController(InstallControllerRequest) returns (InstallControllerResponse);
+  rpc RetireController(RetireControllerRequest) returns (RetireControllerResponse);
+  rpc AcquireControl(AcquireControlRequest) returns (AcquireControlResponse);
+  rpc RenewControl(RenewControlRequest) returns (RenewControlResponse);
+  rpc ReleaseControl(ReleaseControlRequest) returns (ReleaseControlResponse);
   rpc SubscribeStatus(SubscribeStatusRequest) returns (stream SubscribeStatusResponse);
+  rpc RetireStatus(RetireStatusRequest) returns (RetireStatusResponse);
   rpc Health(HealthRequest) returns (HealthResponse);
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
 }
@@ -67,6 +73,31 @@ message MemberIdentity {
   uint64 connection_epoch = 4;
 }
 
+// These identifiers constrain a privately authorized installation; they do
+// not themselves authorize a caller. Remote fields are set only by the Agent
+// that owns the accepted Core presence and selected provider process.
+message ControllerBinding {
+  string provider_instance_id = 1;
+  string core_id = 2;
+  string core_boot_id = 3;
+  string agent_id = 4;
+  string agent_epoch_id = 5;
+}
+message InstallControllerRequest {
+  bytes process_owner = 1;
+  uint64 generation = 2;
+  bytes open_id = 3;
+  bytes controller_grant = 4;
+  ControllerBinding binding = 5;
+}
+message InstallControllerResponse { uint64 generation = 1; bytes open_id = 2; }
+message RetireControllerRequest {
+  bytes process_owner = 1;
+  uint64 generation = 2;
+  bytes open_id = 3;
+}
+message RetireControllerResponse { uint64 generation = 1; bytes open_id = 2; bool joined = 3; }
+
 message MemberRegistration {
   MemberIdentity identity = 1;
   RobotResource configuration = 2;
@@ -84,10 +115,43 @@ message RemoveMembersResponse { repeated MemberResult members = 1; }
 message ExecuteRequest {
   MemberIdentity identity = 1;
   xgc.adapter.v1.OperationRequest operation = 2;
+  // Required for a profile-declared continuous motion command. Other profile
+  // operations and a safety release do not create control ownership.
+  bytes controller_grant = 3;
+  uint64 control_generation = 4;
 }
 message ExecuteResponse { xgc.adapter.v1.OperationEvent event = 1; }
 
-message SubscribeStatusRequest {}
+// A selected observation binds every channel to the exact accepted member
+// incarnation. Selection is observation only and does not grant commands.
+message MemberStatusSelection {
+  MemberIdentity identity = 1;
+  repeated string channel_ids = 2;
+}
+message SelectedStatus {
+  repeated MemberStatusSelection members = 1;
+}
+message StatusOwner {
+  bytes controller_grant = 1;
+  uint64 generation = 2;
+  bytes open_id = 3;
+  uint64 predecessor_generation = 4;
+  bytes predecessor_open_id = 5;
+}
+message SubscribeStatusRequest {
+  // Exactly one mode is required. The all mode is an explicitly broad
+  // observation; selected contains one or more distinct exact members and
+  // their distinct channels. Empty and ambiguous requests are invalid.
+  oneof selection {
+    bool all = 1;
+    SelectedStatus selected = 2;
+    // Required control liveness; emits no telemetry. It consumes the one
+    // controller-reserved stream slot, independently of optional views.
+    bool control = 3;
+  }
+  // Required for control and for status owned by the installed controller.
+  StatusOwner owner = 4;
+}
 message MemberStatus {
   MemberIdentity identity = 1;
   repeated RobotMessage messages = 2;
@@ -95,7 +159,33 @@ message MemberStatus {
 }
 // Snapshots and changes contain latest channel values. A slow subscriber does
 // not retain history or apply backpressure to native ROS publishers.
-message SubscribeStatusResponse { repeated MemberStatus members = 1; }
+message SubscribeStatusResponse {
+  repeated MemberStatus members = 1;
+  // Present on the first frame of a controller-owned stream.
+  uint64 generation = 2;
+  bytes open_id = 3;
+}
+message RetireStatusRequest { StatusOwner owner = 1; bool control = 2; }
+message RetireStatusResponse { uint64 generation = 1; bytes open_id = 2; bool joined = 3; }
+
+message AcquireControlRequest { bytes controller_grant = 1; MemberIdentity identity = 2; uint64 generation = 3; }
+message AcquireControlResponse {
+  MemberIdentity identity = 1;
+  uint64 generation = 2;
+  // Zero only when this profile disables its control-silence watchdog.
+  uint32 heartbeat_interval_ms = 3;
+}
+message ControlRenewal { MemberIdentity identity = 1; uint64 generation = 2; }
+message RenewControlRequest {
+  bytes controller_grant = 1;
+  uint64 status_generation = 2;
+  bytes status_open_id = 3;
+  repeated ControlRenewal members = 4;
+}
+message ControlRenewalResult { MemberIdentity identity = 1; uint64 generation = 2; bool renewed = 3; }
+message RenewControlResponse { repeated ControlRenewalResult members = 1; }
+message ReleaseControlRequest { bytes controller_grant = 1; MemberIdentity identity = 2; uint64 generation = 3; }
+message ReleaseControlResponse { MemberIdentity identity = 1; uint64 generation = 2; bool joined = 3; }
 message HealthRequest {}
 message HealthResponse {
   bool serving = 1;
